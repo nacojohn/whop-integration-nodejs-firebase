@@ -11,6 +11,7 @@
  * the current @whop/elements reference when payments are wired up.
  */
 import { config } from "../config.js";
+import { getPublicConfig } from "./api.js";
 
 let loaderPromise = null;
 let elementsInstance = null;
@@ -31,14 +32,18 @@ function loadScript() {
   return loaderPromise;
 }
 
-/** Returns the shared WhopElements instance (global appearance/locale/environment). */
+/**
+ * Returns the shared WhopElements instance (global appearance/locale/environment).
+ * Environment comes from the server (functions/.env WHOP_ENVIRONMENT) so the
+ * browser and the API key can never point at different Whop environments.
+ */
 export async function getWhopElements() {
   if (elementsInstance) return elementsInstance;
-  const WhopElements = await loadScript();
-  elementsInstance = WhopElements({
+  const [WhopElements, { environment }] = await Promise.all([loadScript(), getPublicConfig()]);
+  elementsInstance ??= WhopElements({
     appearance: config.whop.appearance,
     locale: config.whop.locale,
-    environment: config.whop.environment,
+    environment,
   });
   return elementsInstance;
 }
@@ -80,18 +85,41 @@ export async function mountCheckoutElement(target, request, { elementType = "che
 /**
  * Custom payment form: PaymentElement + EmailElement + AddressElement + BrandingElement.
  * The browser only produces a confirmation token (ctok_…); the server charges it.
- * VERIFY: group/element names and createConfirmationToken/handleNextAction signatures.
+ * Ref: https://docs.whop.com/elements/latest/payments/overview
+ *
+ * The handle needs a "charge config": accountId + plan (Whop resolves currency,
+ * amount and allowed methods from the plan). The server must charge the same plan.
  */
-export async function mountPaymentElements(targets) {
+export async function mountPaymentElements(targets, request) {
+  if (!/^plan_/.test(request.plan || "")) {
+    throw new Error(`"${request.plan}" isn't a Whop plan ID (plan_…).`);
+  }
+  const { accountId } = await getPublicConfig();
+  if (!accountId?.startsWith("biz_")) {
+    throw new Error("Whop account ID unavailable. Set WHOP_COMPANY_ID in functions/.env and make sure the API is running.");
+  }
   const elements = await getWhopElements();
-  const payments = elements.payments.create({});
-  payments.create("email").mount(targets.email);
-  payments.create("address").mount(targets.address);
+  const payments = elements.payments.create({
+    accountId,
+    plan: request.plan,
+    returnUrl: request.returnUrl, // where full-page 3DS / bank steps land
+  });
+  // Branding is required: other elements wait for it and payments can't confirm without it.
+  payments.create("branding").mount(targets.branding);
+  payments.create("email").mount(targets.email); // feeds email into the confirmation token
   payments.create("payment").mount(targets.payment);
-  payments.create("branding").mount(targets.branding); // required by Whop when using payment elements
+  payments.create("address").mount(targets.address); // cards need billing line1 + country
+
   return {
-    createConfirmationToken: () => payments.createConfirmationToken(),
-    handleNextAction: (action) => payments.handleNextAction(action),
+    /** → { confirmationToken: "ctok_…", type } */
+    createConfirmationToken: (billingDetails) => payments.createConfirmationToken({ billingDetails }),
+    /**
+     * 3-D Secure etc. Static on elements.payments. Inline steps open a dialog and
+     * resolve { status, redirected: false, lastPaymentError }; full-page steps
+     * redirect to returnUrl (redirected: true).
+     */
+    handleNextAction: (clientSecret) =>
+      elements.payments.handleNextAction({ clientSecret, returnUrl: request.returnUrl }),
     destroy: () => payments.destroy?.(),
   };
 }

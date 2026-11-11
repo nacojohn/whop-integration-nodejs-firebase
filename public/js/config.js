@@ -23,6 +23,7 @@ export const config = {
   whop: {
     /** Loader from docs.whop.com/elements — loaded lazily, only in live mode. */
     scriptUrl: "https://cdn.whop.com/elements/amber/elements.js",
+    /** Fallback only — live mode uses WHOP_ENVIRONMENT from functions/.env via /api/public-config. */
     environment: "sandbox", // "production" | "sandbox"
     /**
      * Embedded/popup styles normally start checkout from the plan id alone.

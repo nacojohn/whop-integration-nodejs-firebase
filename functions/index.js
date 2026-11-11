@@ -13,7 +13,8 @@
  * Secrets (never in browser code):
  *   firebase functions:secrets:set WHOP_API_KEY
  *   firebase functions:secrets:set WHOP_WEBHOOK_SECRET
- *   firebase functions:secrets:set WHOP_COMPANY_ID    (biz_…)
+ *
+ * Non-secret settings live in functions/.env: WHOP_ENVIRONMENT, WHOP_COMPANY_ID.
  */
 import { onRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
@@ -23,7 +24,8 @@ import { unwrapWebhook } from "@whop/sdk/helpers";
 
 const WHOP_API_KEY = defineSecret("WHOP_API_KEY");
 const WHOP_WEBHOOK_SECRET = defineSecret("WHOP_WEBHOOK_SECRET");
-const WHOP_COMPANY_ID = defineSecret("WHOP_COMPANY_ID");
+/** Whop account (biz_…), from functions/.env. Public — also served to the browser. */
+const WHOP_COMPANY_ID = process.env.WHOP_COMPANY_ID;
 
 /**
  * Must match the environment the API key came from (and config.whop.environment
@@ -45,8 +47,6 @@ const ALLOWED_PLANS = new Set([
 ]);
 
 const json = (res, status, body) => res.status(status).json(body);
-const notImplemented = (res, what) =>
-  json(res, 501, { error: `${what} is not implemented yet — payments are scaffolded only.` });
 
 /** Validates and normalises the checkout request built by public/js/checkout/request.js. */
 function parseRequest(body) {
@@ -81,13 +81,46 @@ async function createCheckoutConfiguration(req, res) {
 async function confirmPayment(req, res) {
   const request = parseRequest(req.body);
   const { confirmationToken } = req.body;
-  if (!confirmationToken) return json(res, 400, { error: "Missing confirmationToken." });
+  if (!/^ctok_/.test(confirmationToken || "")) return json(res, 400, { error: "Missing confirmationToken." });
 
-  // TODO(payments): charge the ctok_ via the Payments API, pass request.metadata,
-  // and return { status, paymentId, nextAction } — nextAction for 3-D Secure.
+  // Price comes from the plan (variant) — never from the browser.
+  const purchase =
+    request.quantity > 1
+      ? { line_items: [{ variant_id: request.plan, quantity: request.quantity }] }
+      : { variant_id: request.plan };
 
-  logger.info("payments/confirm (stub)", { plan: request.plan });
-  return notImplemented(res, "Payment confirmation");
+  const payment = await whopClient().payments.create({
+    account_id: WHOP_COMPANY_ID,
+    ...purchase,
+    confirmation_token: confirmationToken,
+    email: request.metadata.email || undefined,
+    return_url: request.returnUrl,
+    metadata: request.metadata,
+    promo_code: request.promoCode || undefined,
+    affiliate_code: request.affiliateCode || undefined,
+    ip_address: String(req.headers["x-forwarded-for"] || req.ip || "").split(",")[0].trim() || undefined,
+  });
+
+  const result = toBrowserResult(payment);
+  logger.info("payment created", { id: payment.id, status: payment.status, substatus: payment.substatus, result: result.status });
+  return json(res, 200, result);
+}
+
+/**
+ * Whop Payment → what the browser needs.
+ *   succeeded  — paid; show the return page (fulfil from the webhook, not here)
+ *   requires_action — run handleNextAction(clientSecret) for 3-D Secure
+ *   processing — accepted, settling asynchronously
+ *   failed     — show message
+ */
+function toBrowserResult(payment) {
+  const base = { paymentId: payment.id };
+  if (payment.status === "paid" || payment.substatus === "succeeded") return { ...base, status: "succeeded" };
+  if (["failed", "blocked", "canceled", "price_too_low"].includes(payment.substatus) || ["void", "uncollectible"].includes(payment.status)) {
+    return { ...base, status: "failed", message: payment.failure_message || "Your payment was declined." };
+  }
+  if (payment.client_secret) return { ...base, status: "requires_action", clientSecret: payment.client_secret };
+  return { ...base, status: "processing" };
 }
 
 async function whopWebhook(req, res) {
@@ -110,14 +143,24 @@ async function whopWebhook(req, res) {
 
 /* ---------------- Router ---------------- */
 
+/** Public, non-secret settings the browser needs. Never add keys or secrets here. */
+function publicConfig(req, res) {
+  res.set("Cache-Control", "public, max-age=300");
+  return json(res, 200, {
+    accountId: WHOP_COMPANY_ID || null,
+    environment: process.env.WHOP_ENVIRONMENT === "sandbox" ? "sandbox" : "production",
+  });
+}
+
 const routes = {
+  "GET /api/public-config": publicConfig,
   "POST /api/checkout-configurations": createCheckoutConfiguration,
   "POST /api/payments/confirm": confirmPayment,
   "POST /api/webhooks/whop": whopWebhook,
 };
 
 export const api = onRequest(
-  { region: "us-central1", secrets: [WHOP_API_KEY, WHOP_WEBHOOK_SECRET, WHOP_COMPANY_ID] },
+  { region: "us-central1", secrets: [WHOP_API_KEY, WHOP_WEBHOOK_SECRET] },
   async (req, res) => {
     const handler = routes[`${req.method} ${req.path.replace(/\/$/, "")}`];
     if (!handler) return json(res, 404, { error: "Not found." });

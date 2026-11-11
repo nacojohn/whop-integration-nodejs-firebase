@@ -19,6 +19,25 @@ async function post(path, body) {
   return data;
 }
 
+let publicConfigPromise = null;
+
+/**
+ * Public settings from functions/.env (via GET /api/public-config):
+ *   { accountId: "biz_…" | null, environment: "sandbox" | "production" }
+ * Fetched once. If the backend isn't running (hosting-only deploy), falls back to
+ * config.whop.environment with no accountId — embedded/popup/express still work.
+ */
+export function getPublicConfig() {
+  if (isMock()) return Promise.resolve({ accountId: null, environment: config.whop.environment });
+  publicConfigPromise ??= fetch(`${config.api.base}/public-config`)
+    .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`public-config ${res.status}`))))
+    .catch((err) => {
+      console.warn("[api] using local Whop settings:", err.message);
+      return { accountId: null, environment: config.whop.environment };
+    });
+  return publicConfigPromise;
+}
+
 /**
  * Server creates a Whop Checkout Configuration (POST /api/v1/checkout_configurations).
  * Returns { id: "ch_…", purchaseUrl } — id feeds embedded checkout, purchaseUrl feeds hosted.

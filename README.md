@@ -62,7 +62,8 @@ Each style module exports `{ id, label, description, chips, paymentSub, start({ 
 2. For `embedded` / `modal` / `express`, set `mode: "live"` in `config.js`. That's all these styles need.
 3. For `hosted` / `elements` / webhooks:
    - locally: copy `functions/.secret.local.example` → `functions/.secret.local` and fill it in (the emulator reads `defineSecret` values from there)
-   - production: `firebase functions:secrets:set WHOP_API_KEY` (and `WHOP_WEBHOOK_SECRET`, `WHOP_COMPANY_ID`)
+   - production: `firebase functions:secrets:set WHOP_API_KEY` (and `WHOP_WEBHOOK_SECRET`)
+   - non-secret settings go in `functions/.env`: `WHOP_ENVIRONMENT` (sandbox|production) and `WHOP_COMPANY_ID` (biz_…). The browser reads both from `GET /api/public-config`, so this is the single place to switch environments.
    - fill in the `TODO(payments)` blocks in `functions/index.js`, and put your real plan ids in its `ALLOWED_PLANS`
    - `npm run deploy:all` (Functions require the Blaze plan). `firebase.json` already routes `/api/**` to the function.
    - in the Whop dashboard, point a webhook at `https://<site>/api/webhooks/whop` for `payment.succeeded` etc.

@@ -55,9 +55,13 @@ export default {
     mount.replaceChildren(form);
     const el = (k) => form.querySelector(`[data-el="${k}"]`);
 
-    const payments = await mountPaymentElements({
-      email: el("email"), payment: el("payment"), address: el("address"), branding: el("branding"),
-    });
+    const payments = await mountPaymentElements(
+      { email: el("email"), payment: el("payment"), address: el("address"), branding: el("branding") },
+      request
+    );
+
+    const showAlert = (msg) =>
+      el("alert").replaceChildren(h(`<div class="form-alert form-alert-error">${esc(msg)}</div>`));
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -65,15 +69,32 @@ export default {
       btn.disabled = true;
       el("alert").replaceChildren();
       try {
-        const { confirmationToken } = await payments.createConfirmationToken(); // VERIFY return shape
-        let result = await confirmPayment({ confirmationToken, request });
-        if (result.status === "requires_action") {
-          await payments.handleNextAction(result.nextAction);
-          result = { ...result, status: "succeeded" }; // server webhook is the source of truth
+        // 1. Browser: tokenise the payment method (email comes from EmailElement).
+        const { confirmationToken } = await payments.createConfirmationToken({
+          name: `${request.metadata.first_name} ${request.metadata.last_name}`.trim(),
+        });
+
+        // 2. Server: charge it. → { paymentId, status, clientSecret?, message? }
+        const result = await confirmPayment({ confirmationToken, request });
+        if (result.status === "succeeded") {
+          return goToReturnPage(request, { paymentId: result.paymentId, status: "succeeded" });
         }
-        goToReturnPage(request, { paymentId: result.paymentId, status: result.status });
+        if (result.status === "processing") {
+          return goToReturnPage(request, { paymentId: result.paymentId, status: "processing" });
+        }
+        if (result.status === "failed") throw new Error(result.message || "Payment failed.");
+
+        // 3. Needs authentication (3-D Secure). Full-page steps redirect to returnUrl themselves.
+        const action = await payments.handleNextAction(result.clientSecret);
+        if (action.redirected) return;
+        if (action.status === "succeeded" || action.status === "processing") {
+          return goToReturnPage(request, { paymentId: result.paymentId, status: action.status });
+        }
+        // A dismissed dialog leaves the payment pending with no error — never treat that as success.
+        throw new Error(action.lastPaymentError?.message || "Payment wasn't completed. Please try again.");
       } catch (err) {
-        el("alert").replaceChildren(h(`<div class="form-alert form-alert-error">${esc(err.message)}</div>`));
+        if (err?.code === "payment_request_cancelled") { btn.disabled = false; return; }
+        showAlert(err.message);
         btn.disabled = false;
       }
     });
