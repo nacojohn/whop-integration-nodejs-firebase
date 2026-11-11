@@ -9,7 +9,7 @@
  *            Requires real plan IDs in products.js and the functions deployed.
  */
 export const config = {
-  mode: "mock",
+  mode: "live",
 
   /** Style used when the visitor hasn't picked one (and the only one if switching is off). */
   defaultCheckoutStyle: "embedded",
@@ -23,7 +23,7 @@ export const config = {
   whop: {
     /** Loader from docs.whop.com/elements — loaded lazily, only in live mode. */
     scriptUrl: "https://cdn.whop.com/elements/amber/elements.js",
-    environment: "production", // "production" | "sandbox"
+    environment: "sandbox", // "production" | "sandbox"
     /**
      * Embedded/popup styles normally start checkout from the plan id alone.
      * Set true to have the server create a checkout configuration (ch_…) first,

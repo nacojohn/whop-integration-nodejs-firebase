@@ -51,7 +51,13 @@ const clean = (obj) => Object.fromEntries(Object.entries(obj).filter(([, v]) => 
  * elementType: "checkout" (full checkout) | "expressCheckout" (wallet buttons — VERIFY name)
  */
 export async function mountCheckoutElement(target, request, { elementType = "checkout", checkoutConfiguration, onComplete, onLoadingChange } = {}) {
+  if (!checkoutConfiguration && !/^plan_/.test(request.plan || "")) {
+    throw new Error(
+      `"${request.plan}" isn't a Whop plan ID. Use the plan_… ID of a price under your product, not the product's prod_… ID.`
+    );
+  }
   const elements = await getWhopElements();
+  console.log(checkoutConfiguration ? "Using server checkout configuration" : "Using plan id directly", request);
   const checkout = elements.checkout.create(
     clean({
       plan: checkoutConfiguration ? undefined : request.plan,
@@ -62,10 +68,11 @@ export async function mountCheckoutElement(target, request, { elementType = "che
       attribution: request.attribution,
       metadata: checkoutConfiguration ? undefined : request.metadata,
       returnUrl: request.returnUrl,
-      onComplete, // VERIFY: documented on <Checkout>; assumed to be a create() option in vanilla JS
-      onLoadingChange,
+      onComplete, // documented: callbacks go in create() options
+      onLoadingChange, // receives { loading: boolean }
     })
   );
+  target.replaceChildren(); // clear the "Loading…" placeholder
   checkout.create(elementType).mount(target);
   return { destroy: () => checkout.destroy() };
 }

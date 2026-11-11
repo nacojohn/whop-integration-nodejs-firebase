@@ -12,15 +12,30 @@ export function goToReturnPage(request, { paymentId, status = "succeeded", sessi
   location.assign(url.toString());
 }
 
-/** Whop onComplete payload → return page. */
+/**
+ * Whop onComplete payload → return page.
+ * Payload: { sessionId: "chs_…", result: "payment" | "waitlist_entry" | "setup",
+ *            paymentId?: "pay_…", entryId?: "ent_…", setupIntentId?: "sint_…" }
+ *
+ * Whop itself redirects the tab to returnUrl after a finished checkout, and
+ * onComplete fires just before that. So we don't navigate immediately (that
+ * would race Whop's redirect); we only step in if no redirect has started.
+ */
 export function handleWhopComplete(request) {
-  return (payload) =>
-    goToReturnPage(request, {
-      paymentId: payload?.paymentId || payload?.entryId,
-      setupIntentId: payload?.setupIntentId,
-      sessionId: payload?.sessionId,
-      status: "succeeded",
-    });
+  return (payload) => {
+    console.info("[whop] checkout complete", payload);
+    let leaving = false;
+    addEventListener("pagehide", () => { leaving = true; }, { once: true });
+    setTimeout(() => {
+      if (leaving) return;
+      goToReturnPage(request, {
+        paymentId: payload?.paymentId || payload?.entryId,
+        setupIntentId: payload?.setupIntentId,
+        sessionId: payload?.sessionId,
+        status: "succeeded",
+      });
+    }, 2000);
+  };
 }
 
 export function simulateSuccess(request) {
