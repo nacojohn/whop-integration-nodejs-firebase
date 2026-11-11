@@ -9,7 +9,8 @@ npm install                     # installs firebase-tools locally
 npx firebase login
 # put your project id in .firebaserc (or: npx firebase use --add)
 
-npm run dev                     # http://localhost:5000
+npm run dev                     # http://localhost:5000  (site + /api functions)
+npm run dev:static              # site only, no functions
 npm run deploy:preview          # temporary preview URL (30 days)
 npm run deploy                  # live hosting
 ```
@@ -60,12 +61,10 @@ Each style module exports `{ id, label, description, chips, paymentSub, start({ 
 1. Create the products and plans in Whop. Replace each `plan_REPLACE_ME_*` in `public/js/products.js` and `ALLOWED_PLANS` in `functions/index.js`.
 2. For `embedded` / `modal` / `express`, set `mode: "live"` in `config.js`. That's all these styles need.
 3. For `hosted` / `elements` / webhooks:
-   - `firebase functions:secrets:set WHOP_API_KEY` (and `WHOP_WEBHOOK_SECRET`, `WHOP_COMPANY_ID`)
-   - fill in the `TODO(payments)` blocks in `functions/index.js`
-   - add this rewrite to `firebase.json` → `hosting`, then `npm run deploy:all` (Functions require the Blaze plan):
-     ```json
-     "rewrites": [{ "source": "/api/**", "function": { "functionId": "api", "region": "us-central1" } }]
-     ```
+   - locally: copy `functions/.secret.local.example` → `functions/.secret.local` and fill it in (the emulator reads `defineSecret` values from there)
+   - production: `firebase functions:secrets:set WHOP_API_KEY` (and `WHOP_WEBHOOK_SECRET`, `WHOP_COMPANY_ID`)
+   - fill in the `TODO(payments)` blocks in `functions/index.js`, and put your real plan ids in its `ALLOWED_PLANS`
+   - `npm run deploy:all` (Functions require the Blaze plan). `firebase.json` already routes `/api/**` to the function.
    - in the Whop dashboard, point a webhook at `https://<site>/api/webhooks/whop` for `payment.succeeded` etc.
 4. Check the lines marked `VERIFY` in `public/js/checkout/whop.js` against the current `@whop/elements` docs.
 5. If you add a CSP, allow `https://cdn.whop.com` (script/frame) and `https://api.whop.com` (connect).

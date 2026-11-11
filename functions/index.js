@@ -27,12 +27,12 @@ const WHOP_COMPANY_ID = defineSecret("WHOP_COMPANY_ID");
 
 /** Plans the browser may request. Keep in sync with public/js/products.js. */
 const ALLOWED_PLANS = new Set([
-  "plan_REPLACE_ME_GUIDE",
-  "plan_REPLACE_ME_BETA",
-  "plan_REPLACE_ME_REPORT",
-  "plan_REPLACE_ME_PRO",
-  "plan_REPLACE_ME_SESSION",
-  "plan_REPLACE_ME_BUNDLE",
+  "plan_WHlnHCCHxozxz",
+  "plan_Rmt5wwmZFF1ED",
+  "plan_ljhES69BLZbEK",
+  "plan_rv79K9EDdchoj",
+  "plan_vecTtqcsVxaB5",
+  "plan_jL2vyolHhyjEl",
 ]);
 
 const json = (res, status, body) => res.status(status).json(body);
@@ -58,16 +58,15 @@ function parseRequest(body) {
 async function createCheckoutConfiguration(req, res) {
   const request = parseRequest(req.body);
 
-  // TODO(payments):
-  // const whop = new WhopClient({ token: WHOP_API_KEY.value() });
-  // const config = await whop.checkoutConfigurations.create({
-  //   variant_id: request.plan,           // Current API field (Legacy: plan_id)
-  //   metadata: request.metadata,
-  //   redirect_url: request.returnUrl,
-  //   affiliate_code: request.affiliateCode,
-  //   mode: "payment",                    // or "setup" to save a card without charging
-  // });
-  // return json(res, 200, { id: config.id, purchaseUrl: config.purchase_url });
+  const whop = new WhopClient({ token: WHOP_API_KEY.value() });
+  const config = await whop.checkoutConfigurations.create({
+    variant_id: request.plan, 
+    metadata: request.metadata,
+    redirect_url: request.returnUrl,
+    affiliate_code: request.affiliateCode,
+    mode: "payment",                   
+  });
+  return json(res, 200, { id: config.id, purchaseUrl: config.purchase_url });
 
   logger.info("checkout-configurations (stub)", { plan: request.plan });
   return notImplemented(res, "Checkout configuration");
