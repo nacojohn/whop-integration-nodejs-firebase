@@ -1,0 +1,15 @@
+{
+  "name": "foundacompass-checkout-functions",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "engines": { "node": "22" },
+  "scripts": {
+    "serve": "firebase emulators:start --only functions,hosting",
+    "deploy": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "@whop/sdk": "latest",
+    "firebase-functions": "^6.0.0"
+  }
+}

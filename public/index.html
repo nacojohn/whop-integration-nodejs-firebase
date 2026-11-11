@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Founder Toolkit — FoundaCompass</title>
+  <meta name="description" content="Founder validation tools for early-stage SaaS teams." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500&display=swap" rel="stylesheet" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <script type="module" src="/js/main.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <a class="nav-brand" href="/">
+      <span class="nav-icon">⊕</span>
+      <span class="nav-name">FoundaCompass</span>
+    </a>
+    <span class="nav-tagline">AI-powered validation for early-stage SaaS founders</span>
+    <a class="nav-back" href="https://foundacompass.com/">← Home</a>
+  </nav>
+
+  <header class="beta-hero">
+    <div class="beta-hero-content">
+      <div class="beta-badge fade-in"><span class="beta-badge-dot"></span>Founder Toolkit · Store</div>
+      <h1 class="beta-headline fade-in d1">Stop guessing. Validate <em>for real.</em></h1>
+      <p class="beta-sub fade-in d2">The validation playbook most founders follow wasn't designed to find the truth. These tools are.</p>
+      <a class="cta-btn fade-in d3" href="#products">Browse the toolkit →</a>
+    </div>
+  </header>
+
+  <div class="social-bar">
+    <p>Insights from conversations with early-stage founders who learned this the hard way.</p>
+  </div>
+
+  <!-- ========== Products ========== -->
+  <section class="inside" id="products">
+    <div class="section-inner">
+      <div class="inside-header fade-in">
+        <div class="section-label">Inside the toolkit</div>
+        <h2 class="inside-title">What's waiting for you</h2>
+        <p class="inside-sub">Pick one to start checkout.</p>
+      </div>
+      <div class="cards-row" id="product-grid"></div>
+    </div>
+  </section>
+
+  <!-- ========== Checkout ========== -->
+  <section class="beta-body" id="checkout">
+    <div class="beta-cols">
+      <!-- Left: order + checkout style -->
+      <div>
+        <div class="section-label">Checkout</div>
+        <h2 class="benefits-title">Your order, <em>no guesswork.</em></h2>
+
+        <div class="summary" id="order-summary"></div>
+
+        <div id="style-picker-wrap">
+          <div class="section-label">Checkout style</div>
+          <div class="style-picker" id="style-picker" role="radiogroup" aria-label="Checkout style"></div>
+        </div>
+
+        <div class="mode-banner" id="mode-banner"></div>
+      </div>
+
+      <!-- Right: form card -->
+      <div class="beta-form-card" id="checkout-card">
+        <div class="steps"><div class="step on" data-step="1"></div><div class="step" data-step="2"></div></div>
+
+        <!-- Step 1: customer details -->
+        <form class="beta-form" id="details-form" novalidate>
+          <div>
+            <h3 class="beta-form-title">Your details</h3>
+            <p class="beta-form-sub">We use these to set up your access. Payment happens securely through Whop.</p>
+          </div>
+          <div class="field-row">
+            <div class="field"><label for="firstName">First Name</label><input id="firstName" name="firstName" autocomplete="given-name" placeholder="Ada" required /></div>
+            <div class="field"><label for="lastName">Last Name</label><input id="lastName" name="lastName" autocomplete="family-name" placeholder="Lovelace" required /></div>
+          </div>
+          <div class="field"><label for="email">Email Address</label><input id="email" name="email" type="email" autocomplete="email" placeholder="you@startup.com" required /></div>
+          <div class="field">
+            <label for="stage">What stage are you at?</label>
+            <select id="stage" name="stage" required>
+              <option value="">Select your stage</option>
+              <option value="idea">Idea — haven't started building yet</option>
+              <option value="pre-mvp">Pre-MVP — designing or prototyping</option>
+              <option value="post-launch">Post-launch — live but pre-revenue</option>
+              <option value="revenue">Live with early revenue</option>
+            </select>
+          </div>
+          <div class="field"><label for="country">Country <span class="opt">(optional)</span></label><input id="country" name="country" autocomplete="country-name" placeholder="United States" /></div>
+          <div id="details-alert"></div>
+          <button class="submit-btn" type="submit" id="continue-btn">Continue to payment →</button>
+          <p class="form-note">No spam. No sales calls. Just signal.</p>
+        </form>
+
+        <!-- Step 2: payment (filled by the selected checkout style) -->
+        <div id="payment-step" hidden>
+          <button class="back-link" type="button" id="back-btn">← Edit details</button>
+          <h3 class="beta-form-title">Payment</h3>
+          <p class="beta-form-sub" id="payment-sub"></p>
+          <div class="payment-mount" id="payment-mount"></div>
+          <div id="payment-alert"></div>
+          <p class="secure-note">🔒 Secured by Whop</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p class="footer-quote">If you felt something reading this page — that quiet discomfort of recognising yourself — that's your signal.</p>
+    <div class="footer-rule"></div>
+    <div class="footer-name">FoundaCompass</div>
+    <div class="footer-tagline">AI-powered validation for early-stage SaaS founders</div>
+    <a class="footer-link" href="https://foundacompass.com/beta">Join the beta →</a>
+  </footer>
+</body>
+</html>

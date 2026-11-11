@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Order Status — FoundaCompass</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <main class="download-page">
+    <div class="download-card" id="card">
+      <div class="success-icon" id="icon">⊕</div>
+      <div class="download-label" id="label">Checking your order</div>
+      <h1 class="download-title" id="title">One moment…</h1>
+      <p class="download-message" id="message"></p>
+      <p class="ref" id="ref" hidden></p>
+      <a class="cta-btn" id="cta" href="/">Back to the toolkit →</a>
+    </div>
+  </main>
+
+  <script type="module">
+    /*
+     * Whop appends ?payment=pay_…&status=succeeded|failed|canceled to returnUrl.
+     * This page is DISPLAY ONLY — grant access from the payment.succeeded webhook,
+     * never from these query params.
+     */
+    import { findProduct } from "/js/products.js";
+
+    const q = new URLSearchParams(location.search);
+    const status = q.get("status") || "succeeded";
+    const payment = q.get("payment");
+    const product = findProduct(q.get("product"));
+    const $ = (id) => document.getElementById(id);
+
+    const views = {
+      succeeded: {
+        icon: "✓", label: "Order confirmed",
+        title: product ? `You're in. ${product.name} is yours.` : "You're in.",
+        message: "Check your inbox (including the Promotions tab) — your access details usually arrive within two minutes.",
+      },
+      processing: {
+        icon: "◎", label: "Payment processing",
+        title: "Almost there.",
+        message: "Your payment is still processing. We'll email you as soon as it clears.",
+      },
+      failed: {
+        icon: "!", label: "Payment failed",
+        title: "That didn't go through.",
+        message: "Your card wasn't charged. Try again or use a different payment method.",
+        cta: "Try again →",
+      },
+      canceled: {
+        icon: "←", label: "Checkout canceled",
+        title: "No worries.",
+        message: "Nothing was charged. Your order is waiting whenever you're ready.",
+        cta: "Return to checkout →",
+      },
+    };
+    const v = views[status] || views.processing;
+
+    document.title = `${v.label} — FoundaCompass`;
+    $("icon").textContent = v.icon;
+    $("label").textContent = v.label;
+    $("title").textContent = v.title;
+    $("message").textContent = v.message;
+    if (payment) { $("ref").hidden = false; $("ref").innerHTML = "Reference: <code></code>"; $("ref").querySelector("code").textContent = payment; }
+    if (v.cta) {
+      $("cta").textContent = v.cta;
+      const back = new URL("/", location.origin);
+      if (product) back.searchParams.set("product", product.id);
+      if (q.get("style")) back.searchParams.set("style", q.get("style"));
+      back.hash = "checkout";
+      $("cta").href = back.pathname + back.search + back.hash;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "foundacompass-whop-checkout",
+  "private": true,
+  "description": "FoundaCompass store + Whop checkout architecture (static site on Firebase Hosting).",
+  "scripts": {
+    "dev": "firebase emulators:start --only hosting --project demo-foundacompass",
+    "deploy": "firebase deploy --only hosting",
+    "deploy:preview": "firebase hosting:channel:deploy preview --expires 30d",
+    "deploy:all": "firebase deploy"
+  },
+  "devDependencies": {
+    "firebase-tools": "^14.0.0"
+  }
+}
