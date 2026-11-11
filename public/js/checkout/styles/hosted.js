@@ -11,7 +11,7 @@ export default {
   id: "hosted",
   label: "Hosted checkout page",
   description: "Redirects to a Whop-hosted checkout page, then back to this site. Simplest to maintain.",
-  chips: ["Needs server"],
+  chips: [],
   paymentSub: "You'll finish checkout on Whop's secure page.",
 
   async start({ mount, request }) {

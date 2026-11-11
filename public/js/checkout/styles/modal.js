@@ -34,7 +34,7 @@ export default {
   id: "modal",
   label: "Popup checkout",
   description: "Checkout opens in an overlay on top of the page. Good for one-click buy buttons.",
-  chips: ["No server needed"],
+  chips: [],
   paymentSub: "Checkout opens in a secure window.",
 
   async start({ mount, request, product }) {

@@ -13,7 +13,7 @@ export default {
   id: "embedded",
   label: "Embedded checkout",
   description: "Whop's full checkout renders inline, right here in the card. Buyers never leave the page.",
-  chips: ["Recommended", "No server needed"],
+  chips: [],
   paymentSub: "Complete your purchase below.",
 
   async start({ mount, request }) {

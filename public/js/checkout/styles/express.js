@@ -15,7 +15,7 @@ export default {
   id: "express",
   label: "Express wallets",
   description: "Apple Pay, Google Pay and PayPal buttons for one-tap checkout, with card checkout as a fallback.",
-  chips: ["No server needed", "Domain setup for Apple Pay"],
+  chips: [],
   paymentSub: "Pay in one tap, or use a card.",
 
   async start({ mount, request }) {

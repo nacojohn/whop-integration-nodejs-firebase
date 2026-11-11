@@ -17,7 +17,7 @@ export default {
   id: "elements",
   label: "Custom payment form",
   description: "Individual Whop payment fields styled into our own form. Full design control, server confirms the charge.",
-  chips: ["Needs server", "Most control"],
+  chips: [],
   paymentSub: "Enter your payment details.",
 
   async start({ mount, request, product }) {
