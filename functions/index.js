@@ -18,12 +18,21 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { logger } from "firebase-functions";
-// import { WhopClient } from "@whop/sdk";            // TODO(payments)
-// import { unwrapWebhook } from "@whop/sdk/helpers"; // TODO(payments)
+import { WhopClient, WhopEnvironment } from "@whop/sdk";
+import { unwrapWebhook } from "@whop/sdk/helpers";
 
 const WHOP_API_KEY = defineSecret("WHOP_API_KEY");
 const WHOP_WEBHOOK_SECRET = defineSecret("WHOP_WEBHOOK_SECRET");
 const WHOP_COMPANY_ID = defineSecret("WHOP_COMPANY_ID");
+
+/**
+ * Must match the environment the API key came from (and config.whop.environment
+ * in the browser). Set WHOP_ENVIRONMENT in functions/.env: "sandbox" | "production".
+ * The SDK defaults to production, so a sandbox key without this → 401.
+ */
+const WHOP_ENV = process.env.WHOP_ENVIRONMENT === "sandbox" ? WhopEnvironment.Sandbox : WhopEnvironment.Production;
+
+const whopClient = () => new WhopClient({ token: WHOP_API_KEY.value(), environment: WHOP_ENV });
 
 /** Plans the browser may request. Keep in sync with public/js/products.js. */
 const ALLOWED_PLANS = new Set([
@@ -58,18 +67,15 @@ function parseRequest(body) {
 async function createCheckoutConfiguration(req, res) {
   const request = parseRequest(req.body);
 
-  const whop = new WhopClient({ token: WHOP_API_KEY.value() });
-  const config = await whop.checkoutConfigurations.create({
-    variant_id: request.plan, 
+  const config = await whopClient().checkoutConfigurations.create({
+    variant_id: request.plan,
     metadata: request.metadata,
     redirect_url: request.returnUrl,
     affiliate_code: request.affiliateCode,
-    mode: "payment",                   
+    mode: "payment",
   });
+  logger.info("checkout configuration created", { id: config.id, plan: request.plan });
   return json(res, 200, { id: config.id, purchaseUrl: config.purchase_url });
-
-  logger.info("checkout-configurations (stub)", { plan: request.plan });
-  return notImplemented(res, "Checkout configuration");
 }
 
 async function confirmPayment(req, res) {
